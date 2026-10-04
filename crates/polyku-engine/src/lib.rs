@@ -1,12 +1,20 @@
 //! Polyku's sudoku engine — generation, solving, and variant rules.
 //!
-//! Milestone M1 fills this crate with the bitmask `Grid`, the DLX
-//! (Dancing Links) exact-cover solver, and the puzzle generator.
+//! Current milestone (M1): the classic 9×9 core.
+//! - [`grid`]: the board with bitmask bookkeeping
+//! - [`dlx`]: Dancing Links exact-cover solver
+//! - [`sudoku`]: sudoku ↔ exact-cover mapping (uniqueness proofs live here)
+//! - [`generator`]: randomized puzzle generation, unique by construction
+//!
+//! M2 will add the `VariantRule` trait and the first variants;
+//! M3 the human-logic deduction engine.
+
+pub mod dlx;
+pub mod generator;
+pub mod grid;
+pub mod sudoku;
 
 /// Returns the engine's package version.
-///
-/// Temporary smoke-test API: it lets the Tauri app prove that the
-/// engine crate is wired into the build end-to-end.
 pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
