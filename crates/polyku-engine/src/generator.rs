@@ -20,11 +20,29 @@ use crate::rules::{Cage, RuleData, RuleKind, RuleSet, ThermoPath};
 use crate::solver;
 use rand::seq::SliceRandom;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
+
+/// serde support for `[u8; 81]` — serde's array impls stop at 32 elements,
+/// but a slice serializes fine and a Vec converts back with a length check.
+mod array81 {
+    use crate::grid::CELLS;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S: Serializer>(v: &[u8; CELLS], s: S) -> Result<S::Ok, S::Error> {
+        (&v[..]).serialize(s)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<[u8; CELLS], D::Error> {
+        let v = Vec::<u8>::deserialize(d)?;
+        v.try_into()
+            .map_err(|_| serde::de::Error::custom("expected exactly 81 cells"))
+    }
+}
 
 /// The six honest difficulty tiers. A puzzle's difficulty is the hardest
 /// human-logic technique it requires (graded by the deduction engine), not
 /// a clue count — clue targets only steer the carving.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
 pub enum Difficulty {
     Beginner,
     Easy,
@@ -62,11 +80,13 @@ impl Difficulty {
 
 /// A finished product: what the player sees, plus the hidden solution,
 /// the rule instances that shape it, and its graded difficulty.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Puzzle {
     /// The board with holes; 0 = empty cell.
+    #[serde(with = "array81")]
     pub givens: [u8; CELLS],
     /// The unique solution.
+    #[serde(with = "array81")]
     pub solution: [u8; CELLS],
     /// Serializable descriptions of the active rules (empty for classic).
     pub rules: Vec<RuleData>,

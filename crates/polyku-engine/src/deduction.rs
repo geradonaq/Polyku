@@ -15,7 +15,7 @@
 //! logic like cage arithmetic), and diagonals join the unit list so
 //! X-sudoku gets full technique coverage on its extra units.
 
-use crate::grid::{DigitMask, ALL_DIGITS, CELLS};
+use crate::grid::{DigitMask, CELLS};
 use crate::rules::RuleSet;
 use serde::{Deserialize, Serialize};
 
@@ -280,7 +280,7 @@ impl DeductionState {
 /// Runs one rule-prune sweep over the candidate matrix.
 /// Returns true if anything changed (a "tier 0" variant-logic step).
 fn prune_sweep(state: &mut DeductionState, rules: &RuleSet) -> bool {
-    let mut before = state.cands;
+    let before = state.cands;
     rules.prune(&state.cells, &mut state.cands);
     before != state.cands
 }
@@ -370,7 +370,7 @@ impl DeductionEngine<'_> {
 // ---------------------------------------------------------------------------
 
 /// Digit mask helper: iterate set digits.
-fn digits_of(mask: DigitMask) -> Vec<u8> {
+pub fn digits_of(mask: DigitMask) -> Vec<u8> {
     (1..=9).filter(|&d| mask & (1 << (d - 1)) != 0).collect()
 }
 
@@ -593,7 +593,7 @@ fn hidden_group(state: &DeductionState, ctx: &DeductionCtx, k: usize) -> Option<
 
 /// Pointing & claiming: a digit confined to one line inside a box (or one
 /// box inside a line) leaves everywhere else on that line / box.
-fn pointing_claiming(state: &DeductionState, ctx: &DeductionCtx) -> Option<Hint> {
+fn pointing_claiming(state: &DeductionState, _ctx: &DeductionCtx) -> Option<Hint> {
     for d in 1..=9u8 {
         let bit = 1 << (d - 1);
         // Pointing: within each box, digit spots all on one row or column.
@@ -1015,7 +1015,7 @@ fn simple_coloring(state: &DeductionState, ctx: &DeductionCtx) -> Option<Hint> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::grid::Grid;
+    use crate::grid::{Grid, ALL_DIGITS};
 
     const EASY: &str = "530070000600195000098000060800060003400803001700020006060000280000419005000080079";
     const EASY_SOLUTION: &str =
