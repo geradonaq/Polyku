@@ -1,1 +1,5 @@
 @import "tailwindcss";
+
+/* Class-based dark mode: the `dark` class on the root wrapper enables the
+   dark: variants (Tailwind v4 defaults to prefers-color-scheme). */
+@custom-variant dark (&:where(.dark, .dark *));
