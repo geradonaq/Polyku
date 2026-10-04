@@ -97,8 +97,16 @@ mod tests {
         Diagonal.prune(&cells, &mut cands);
         let on_main = Coord::new(5, 5).index();
         let off_diagonal = Coord::new(5, 6).index();
-        assert_eq!(cands[on_main] & (1 << 3), 0, "digit 4 banned on main diagonal");
-        assert_ne!(cands[off_diagonal] & (1 << 3), 0, "unrelated cell unaffected");
+        assert_eq!(
+            cands[on_main] & (1 << 3),
+            0,
+            "digit 4 banned on main diagonal"
+        );
+        assert_ne!(
+            cands[off_diagonal] & (1 << 3),
+            0,
+            "unrelated cell unaffected"
+        );
         assert_eq!(cands[off_diagonal], range_mask(1, 9));
     }
 }

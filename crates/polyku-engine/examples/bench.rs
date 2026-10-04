@@ -13,12 +13,28 @@ fn main() {
         ("classic Medium", vec![], Difficulty::Medium),
         ("classic Hard", vec![], Difficulty::Hard),
         ("diagonal Easy", vec![RuleKind::Diagonal], Difficulty::Easy),
-        ("nonconsecutive Easy", vec![RuleKind::NonConsecutive], Difficulty::Easy),
+        (
+            "nonconsecutive Easy",
+            vec![RuleKind::NonConsecutive],
+            Difficulty::Easy,
+        ),
         ("killer Easy", vec![RuleKind::Killer], Difficulty::Easy),
         ("thermo Easy", vec![RuleKind::Thermo], Difficulty::Easy),
-        ("diag+killer Easy", vec![RuleKind::Diagonal, RuleKind::Killer], Difficulty::Easy),
-        ("nonconsecutive Medium", vec![RuleKind::NonConsecutive], Difficulty::Medium),
-        ("nonconsecutive Hard", vec![RuleKind::NonConsecutive], Difficulty::Hard),
+        (
+            "diag+killer Easy",
+            vec![RuleKind::Diagonal, RuleKind::Killer],
+            Difficulty::Easy,
+        ),
+        (
+            "nonconsecutive Medium",
+            vec![RuleKind::NonConsecutive],
+            Difficulty::Medium,
+        ),
+        (
+            "nonconsecutive Hard",
+            vec![RuleKind::NonConsecutive],
+            Difficulty::Hard,
+        ),
         ("killer Medium", vec![RuleKind::Killer], Difficulty::Medium),
         ("killer Hard", vec![RuleKind::Killer], Difficulty::Hard),
     ];

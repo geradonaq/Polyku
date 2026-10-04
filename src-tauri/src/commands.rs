@@ -2,8 +2,7 @@
 //! `game.rs` (testable without Tauri) and `storage.rs` (injectable dirs).
 
 use crate::dto::{
-    parse_difficulty, parse_rules, ActiveGame, GameRecord, HintDto, PuzzleDto, SaveGame,
-    Stats,
+    parse_difficulty, parse_rules, ActiveGame, GameRecord, HintDto, PuzzleDto, SaveGame, Stats,
 };
 use crate::game::{compute_candidates, compute_conflicts, compute_hint, GameStore};
 use crate::storage;
@@ -20,12 +19,11 @@ async fn new_game(
 ) -> Result<PuzzleDto, String> {
     let diff = parse_difficulty(&difficulty)?;
     let kinds = parse_rules(&rules)?;
-    let puzzle =
-        tauri::async_runtime::spawn_blocking(move || {
-            polyku_engine::generator::generate_with_rules(&mut rand::thread_rng(), &kinds, diff)
-        })
-        .await
-        .map_err(|e| e.to_string())?;
+    let puzzle = tauri::async_runtime::spawn_blocking(move || {
+        polyku_engine::generator::generate_with_rules(&mut rand::thread_rng(), &kinds, diff)
+    })
+    .await
+    .map_err(|e| e.to_string())?;
 
     let overlays = {
         let mut set = polyku_engine::rules::RuleSet::new();
@@ -56,10 +54,7 @@ async fn new_game(
 
 /// Cells currently breaking any active rule — the red-highlight set.
 #[tauri::command]
-fn validate_board(
-    store: State<'_, GameStore>,
-    cells: Vec<u8>,
-) -> Result<Vec<usize>, String> {
+fn validate_board(store: State<'_, GameStore>, cells: Vec<u8>) -> Result<Vec<usize>, String> {
     let guard = store.0.lock().map_err(|_| "game store poisoned")?;
     let active = guard.as_ref().ok_or("no active game")?;
     let cells: [u8; polyku_engine::grid::CELLS] = cells.try_into().map_err(|_| "need 81 cells")?;
@@ -129,16 +124,15 @@ fn clean_entries(
         return Err("need 81 cells".into());
     }
     let placed_correctly = targets.iter().all(|&i| {
-        i < polyku_engine::grid::CELLS
-            && (active.givens[i] != 0 || cells[i] == active.solution[i])
+        i < polyku_engine::grid::CELLS && (active.givens[i] != 0 || cells[i] == active.solution[i])
     });
     if !placed_correctly {
         return Ok(cells);
     }
     let mut out = cells;
-    for i in 0..polyku_engine::grid::CELLS {
-        if active.givens[i] == 0 && out[i] != 0 && out[i] != active.solution[i] {
-            out[i] = 0;
+    for (i, cell) in out.iter_mut().enumerate() {
+        if active.givens[i] == 0 && *cell != 0 && *cell != active.solution[i] {
+            *cell = 0;
         }
     }
     Ok(out)
@@ -158,7 +152,10 @@ fn load_game(store: State<'_, GameStore>) -> Result<Option<SaveGame>, String> {
             grade: save.grade,
         });
     }
-    Ok(save.map(|s| SaveGame { solution: vec![], ..s }))
+    Ok(save.map(|s| SaveGame {
+        solution: vec![],
+        ..s
+    }))
 }
 
 /// Appends a finished (or abandoned) game to the statistics file.

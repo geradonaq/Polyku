@@ -132,12 +132,12 @@ type RuleKindName = polyku_engine::rules::RuleKind;
 pub fn rule_names(rules: &[RuleData]) -> Vec<String> {
     rules
         .iter()
-        .filter_map(|r| match r {
-            RuleData::Diagonal => Some("diagonal".to_string()),
-            RuleData::Killer { .. } => Some("killer".to_string()),
-            RuleData::Thermo { .. } => Some("thermo".to_string()),
-            RuleData::NonConsecutive => Some("non_consecutive".to_string()),
-            RuleData::AntiKnight => Some("anti_knight".to_string()),
+        .map(|r| match r {
+            RuleData::Diagonal => "diagonal".to_string(),
+            RuleData::Killer { .. } => "killer".to_string(),
+            RuleData::Thermo { .. } => "thermo".to_string(),
+            RuleData::NonConsecutive => "non_consecutive".to_string(),
+            RuleData::AntiKnight => "anti_knight".to_string(),
         })
         .collect()
 }

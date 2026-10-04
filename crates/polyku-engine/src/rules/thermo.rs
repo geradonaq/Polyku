@@ -70,7 +70,10 @@ impl VariantRule for Thermo {
     }
 
     fn overlays(&self) -> Vec<Overlay> {
-        self.paths.iter().map(|p| Overlay::Path { cells: p.clone() }).collect()
+        self.paths
+            .iter()
+            .map(|p| Overlay::Path { cells: p.clone() })
+            .collect()
     }
 }
 
@@ -87,7 +90,9 @@ mod tests {
     fn positional_band_traps_ends() {
         // 4-cell thermo: position p needs p digits below and 3-p above, so
         // head ∈ [1,6], middle bands narrow in, tip ∈ [4,9].
-        let t = Thermo { paths: vec![path(&[(0, 0), (0, 1), (0, 2), (0, 3)])] };
+        let t = Thermo {
+            paths: vec![path(&[(0, 0), (0, 1), (0, 2), (0, 3)])],
+        };
         let cells = [0u8; CELLS];
         let mut cands = [0x1FF; CELLS];
         Thermo::prune(&t, &cells, &mut cands);
@@ -98,7 +103,9 @@ mod tests {
 
     #[test]
     fn assigned_head_pushes_rest_up() {
-        let t = Thermo { paths: vec![path(&[(0, 0), (0, 1)])] };
+        let t = Thermo {
+            paths: vec![path(&[(0, 0), (0, 1)])],
+        };
         let mut cells = [0u8; CELLS];
         cells[Coord::new(0, 0).index()] = 5;
         let mut cands = [0x1FF; CELLS];
@@ -109,7 +116,9 @@ mod tests {
 
     #[test]
     fn decreasing_pair_is_inconsistent() {
-        let t = Thermo { paths: vec![path(&[(0, 0), (0, 1)])] };
+        let t = Thermo {
+            paths: vec![path(&[(0, 0), (0, 1)])],
+        };
         let mut cells = [0u8; CELLS];
         cells[Coord::new(0, 0).index()] = 5;
         cells[Coord::new(0, 1).index()] = 5; // not strictly increasing

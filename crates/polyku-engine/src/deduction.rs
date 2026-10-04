@@ -68,7 +68,10 @@ impl DeductionCtx {
     /// Builds the context for a puzzle's rule set (used via `RuleData`).
     pub fn for_rules(rules: &[crate::rules::RuleData]) -> DeductionCtx {
         let mut units = classic_units();
-        if rules.iter().any(|r| matches!(r, crate::rules::RuleData::Diagonal)) {
+        if rules
+            .iter()
+            .any(|r| matches!(r, crate::rules::RuleData::Diagonal))
+        {
             units.push(Unit {
                 kind: UnitKind::Diagonal,
                 index: 0,
@@ -80,7 +83,10 @@ impl DeductionCtx {
                 cells: (0..9).map(|k| k * 9 + (8 - k)).collect(),
             });
         }
-        DeductionCtx { units, peers: classic_peers() }
+        DeductionCtx {
+            units,
+            peers: classic_peers(),
+        }
     }
 
     /// Row / column / box a cell index belongs to.
@@ -89,7 +95,13 @@ impl DeductionCtx {
             UnitKind::Row => cell / 9,
             UnitKind::Column => cell % 9,
             UnitKind::Box => (cell / 27) * 3 + (cell % 9) / 3,
-            UnitKind::Diagonal => if cell % 10 == 0 { 0 } else { 1 }, // (r,r) main
+            UnitKind::Diagonal => {
+                if cell.is_multiple_of(10) {
+                    0
+                } else {
+                    1
+                }
+            } // (r,r) main
         }
     }
 }
@@ -97,7 +109,11 @@ impl DeductionCtx {
 fn classic_units() -> Vec<Unit> {
     let mut units = Vec::with_capacity(27);
     for r in 0..9 {
-        units.push(Unit { kind: UnitKind::Row, index: r, cells: (0..9).map(|c| r * 9 + c).collect() });
+        units.push(Unit {
+            kind: UnitKind::Row,
+            index: r,
+            cells: (0..9).map(|c| r * 9 + c).collect(),
+        });
     }
     for c in 0..9 {
         units.push(Unit {
@@ -111,17 +127,15 @@ fn classic_units() -> Vec<Unit> {
         units.push(Unit {
             kind: UnitKind::Box,
             index: b,
-            cells: (0..9)
-                .map(|k| (r0 + k / 3) * 9 + c0 + k % 3)
-                .collect(),
+            cells: (0..9).map(|k| (r0 + k / 3) * 9 + c0 + k % 3).collect(),
         });
     }
     units
 }
 
 fn classic_peers() -> Vec<Vec<usize>> {
-    let mut peers = vec![Vec::new(); CELLS];
-    for i in 0..CELLS {
+    let mut peers: Vec<Vec<usize>> = vec![Vec::new(); CELLS];
+    for (i, p) in peers.iter_mut().enumerate() {
         let (r, c) = (i / 9, i % 9);
         let (br, bc) = (r / 3 * 3, c / 3 * 3);
         for j in 0..CELLS {
@@ -130,7 +144,7 @@ fn classic_peers() -> Vec<Vec<usize>> {
             }
             let (rj, cj) = (j / 9, j % 9);
             if rj == r || cj == c || (rj / 3 == br / 3 && cj / 3 == bc / 3) {
-                peers[i].push(j);
+                p.push(j);
             }
         }
     }
@@ -180,7 +194,9 @@ impl Technique {
         match self {
             Technique::NakedSingle => 1,
             Technique::HiddenSingle | Technique::PointingClaiming => 2,
-            Technique::NakedPair | Technique::HiddenPair | Technique::NakedTriple
+            Technique::NakedPair
+            | Technique::HiddenPair
+            | Technique::NakedTriple
             | Technique::HiddenTriple => 3,
             Technique::NakedQuad | Technique::XWing => 4,
             Technique::Swordfish | Technique::YWing | Technique::SimpleColoring => 5,
@@ -248,7 +264,10 @@ impl DeductionState {
             }
         }
         rules.prune(cells, &mut cands);
-        DeductionState { cells: *cells, cands }
+        DeductionState {
+            cells: *cells,
+            cands,
+        }
     }
 
     pub fn is_solved(&self) -> bool {
@@ -313,7 +332,11 @@ impl DeductionEngine<'_> {
         let mut steps = 0usize;
         loop {
             if state.is_solved() {
-                return Grade { solved: true, max_tier, steps };
+                return Grade {
+                    solved: true,
+                    max_tier,
+                    steps,
+                };
             }
             if prune_sweep(state, self.rules) {
                 continue; // variant logic made progress — free, tier 0
@@ -325,7 +348,11 @@ impl DeductionEngine<'_> {
                     state.apply(self.ctx, &hint);
                 }
                 None => {
-                    return Grade { solved: false, max_tier, steps };
+                    return Grade {
+                        solved: false,
+                        max_tier,
+                        steps,
+                    };
                 }
             }
         }
@@ -405,7 +432,11 @@ fn cell_name(cell: usize) -> String {
 }
 
 fn digits_text(digits: &[u8]) -> String {
-    digits.iter().map(|d| d.to_string()).collect::<Vec<_>>().join(", ")
+    digits
+        .iter()
+        .map(|d| d.to_string())
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn naked_single(state: &DeductionState) -> Option<Hint> {
@@ -510,7 +541,7 @@ fn naked_group(state: &DeductionState, ctx: &DeductionCtx, k: usize) -> Option<H
                 tier: tech.tier(),
                 placements: vec![],
                 eliminations,
-                highlight_cells: combo.iter().copied().collect(),
+                highlight_cells: combo.to_vec(),
                 highlight_digits: digits.clone(),
                 explanation: format!(
                     "{} in {} holds {{{}}}; those digits belong to it and can leave every other cell there.",
@@ -599,8 +630,7 @@ fn pointing_claiming(state: &DeductionState, _ctx: &DeductionCtx) -> Option<Hint
         // Pointing: within each box, digit spots all on one row or column.
         for b in 0..9usize {
             let (r0, c0) = ((b / 3) * 3, (b % 3) * 3);
-            let box_cells: Vec<usize> =
-                (0..9).map(|k| (r0 + k / 3) * 9 + c0 + k % 3).collect();
+            let box_cells: Vec<usize> = (0..9).map(|k| (r0 + k / 3) * 9 + c0 + k % 3).collect();
             let spots: Vec<usize> = box_cells
                 .iter()
                 .filter(|&&i| state.cells[i] == 0 && state.cands[i] & bit != 0)
@@ -666,7 +696,13 @@ fn pointing_claiming(state: &DeductionState, _ctx: &DeductionCtx) -> Option<Hint
         // Claiming: within each row/col, digit spots all in one box.
         for line in 0..18usize {
             let line_cells: Vec<usize> = (0..9)
-                .map(|k| if line < 9 { line * 9 + k } else { k * 9 + (line - 9) })
+                .map(|k| {
+                    if line < 9 {
+                        line * 9 + k
+                    } else {
+                        k * 9 + (line - 9)
+                    }
+                })
                 .collect();
             let spots: Vec<usize> = line_cells
                 .iter()
@@ -702,7 +738,9 @@ fn pointing_claiming(state: &DeductionState, _ctx: &DeductionCtx) -> Option<Hint
                         highlight_digits: vec![d],
                         explanation: format!(
                             "In {}, {} can only appear in box {} — it leaves the rest of that box.",
-                            line_name, d, b + 1
+                            line_name,
+                            d,
+                            b + 1
                         ),
                     });
                 }
@@ -984,9 +1022,7 @@ fn simple_coloring(state: &DeductionState, ctx: &DeductionCtx) -> Option<Hint> {
                     }
                 }
             }
-            if let Some((&chain, _)) =
-                chains_seen.iter().find(|(_, &(a, b))| a && b)
-            {
+            if let Some((&chain, _)) = chains_seen.iter().find(|(_, &(a, b))| a && b) {
                 let highlight: Vec<usize> = color
                     .iter()
                     .filter(|(&i, _)| comp[&i] == chain)
@@ -1017,7 +1053,8 @@ mod tests {
     use super::*;
     use crate::grid::{Grid, ALL_DIGITS};
 
-    const EASY: &str = "530070000600195000098000060800060003400803001700020006060000280000419005000080079";
+    const EASY: &str =
+        "530070000600195000098000060800060003400803001700020006060000280000419005000080079";
     const EASY_SOLUTION: &str =
         "534678912672195348198342567859761423426853791713924856961537284287419635345286179";
 
@@ -1029,11 +1066,18 @@ mod tests {
     fn easy_puzzle_solves_with_singles_only() {
         let ctx = classic_ctx();
         let rules = RuleSet::new();
-        let e = DeductionEngine { ctx: &ctx, rules: &rules, max_tier: 2 };
-        let mut state = DeductionState::new(&Grid::parse(EASY).cells(), &rules);
+        let e = DeductionEngine {
+            ctx: &ctx,
+            rules: &rules,
+            max_tier: 2,
+        };
+        let mut state = DeductionState::new(Grid::parse(EASY).cells(), &rules);
         let grade = e.solve(&mut state);
         assert!(grade.solved);
-        assert!(grade.max_tier <= 2, "newspaper-easy should not need past tier 2");
+        assert!(
+            grade.max_tier <= 2,
+            "newspaper-easy should not need past tier 2"
+        );
         assert_eq!(state.cells, *Grid::parse(EASY_SOLUTION).cells());
     }
 
@@ -1055,9 +1099,20 @@ mod tests {
         state.cands[6] = 0b110; // {2,3}
         state.cands[7] = 0b110; // {2,3}
         state.cands[8] = 0b1110; // {2,3,4}
-        let t1 = DeductionEngine { ctx: &ctx, rules: &rules, max_tier: 1 };
-        assert!(!t1.solve(&mut state).solved, "no naked single exists — tier 1 stalls");
-        let t2 = DeductionEngine { ctx: &ctx, rules: &rules, max_tier: 2 };
+        let t1 = DeductionEngine {
+            ctx: &ctx,
+            rules: &rules,
+            max_tier: 1,
+        };
+        assert!(
+            !t1.solve(&mut state).solved,
+            "no naked single exists — tier 1 stalls"
+        );
+        let t2 = DeductionEngine {
+            ctx: &ctx,
+            rules: &rules,
+            max_tier: 2,
+        };
         let hint = t2.hint(&state).expect("tier 2 must find the hidden single");
         assert_eq!(hint.technique, "Hidden Single");
         assert_eq!(hint.placements, vec![(8, 4)]);
@@ -1067,8 +1122,12 @@ mod tests {
     fn hint_applies_and_progresses() {
         let ctx = classic_ctx();
         let rules = RuleSet::new();
-        let e = DeductionEngine { ctx: &ctx, rules: &rules, max_tier: 6 };
-        let mut state = DeductionState::new(&Grid::parse(EASY).cells(), &rules);
+        let e = DeductionEngine {
+            ctx: &ctx,
+            rules: &rules,
+            max_tier: 6,
+        };
+        let mut state = DeductionState::new(Grid::parse(EASY).cells(), &rules);
         let before = state.cells.iter().filter(|&&d| d != 0).count();
         let hint = e.hint(&state).expect("must have a next step");
         state.apply(&ctx, &hint);
@@ -1105,7 +1164,7 @@ mod tests {
         // corners of rows 0/8 × cols 0/8 (an X-Wing) plus one victim at
         // r2c0, which must lose its 9. (Rows 0 and 8 are the only active
         // lines — the victim's row has a single 9-spot.)
-        let ctx = classic_ctx();
+        let _ctx = classic_ctx();
         let mut state = DeductionState::new(&[0u8; CELLS], &RuleSet::new());
         state.cands = [ALL_DIGITS & !(1 << 8); CELLS];
         for &i in &[0usize, 8, 72, 80, 9] {

@@ -99,7 +99,10 @@ impl VariantRule for Killer {
     fn overlays(&self) -> Vec<Overlay> {
         self.cages
             .iter()
-            .map(|c| Overlay::Cage { cells: c.cells.clone(), sum: Some(c.sum) })
+            .map(|c| Overlay::Cage {
+                cells: c.cells.clone(),
+                sum: Some(c.sum),
+            })
             .collect()
     }
 }
@@ -126,7 +129,9 @@ mod tests {
 
     #[test]
     fn complete_cage_must_hit_its_sum() {
-        let k = Killer { cages: vec![cage(&[(0, 0), (0, 1)], 7)] };
+        let k = Killer {
+            cages: vec![cage(&[(0, 0), (0, 1)], 7)],
+        };
         let mut cells = [0u8; CELLS];
         cells[Coord::new(0, 0).index()] = 3;
         cells[Coord::new(0, 1).index()] = 4;
@@ -137,7 +142,9 @@ mod tests {
 
     #[test]
     fn partial_cage_may_not_exceed_sum() {
-        let k = Killer { cages: vec![cage(&[(0, 0), (0, 1)], 7)] };
+        let k = Killer {
+            cages: vec![cage(&[(0, 0), (0, 1)], 7)],
+        };
         let mut cells = [0u8; CELLS];
         cells[Coord::new(0, 0).index()] = 8;
         assert!(!k.is_consistent(&cells)); // 8 > 7 already
@@ -146,7 +153,9 @@ mod tests {
     #[test]
     fn prune_forces_last_cage_cell() {
         // Cage {3,4} sum 7: after placing 3, the last cell is forced to 4.
-        let k = Killer { cages: vec![cage(&[(0, 0), (0, 1)], 7)] };
+        let k = Killer {
+            cages: vec![cage(&[(0, 0), (0, 1)], 7)],
+        };
         let mut cells = [0u8; CELLS];
         cells[Coord::new(0, 0).index()] = 3;
         let mut cands = [0x1FF; CELLS];
@@ -158,7 +167,9 @@ mod tests {
     #[test]
     fn prune_bans_cage_duplicates_and_overshoots() {
         // Cage of two, sum 17: only pairs (8,9)/(9,8) are possible.
-        let k = Killer { cages: vec![cage(&[(0, 0), (0, 1)], 17)] };
+        let k = Killer {
+            cages: vec![cage(&[(0, 0), (0, 1)], 17)],
+        };
         let mut cells = [0u8; CELLS];
         cells[Coord::new(0, 0).index()] = 9;
         let mut cands = [0x1FF; CELLS];
@@ -166,6 +177,10 @@ mod tests {
         assert_eq!(cands[Coord::new(0, 1).index()], 1 << 7); // forced 8
         let mut cands2 = [0x1FF; CELLS];
         Killer::prune(&k, &cells, &mut cands2); // cell (0,1) perspective
-        assert_eq!(cands2[Coord::new(1, 0).index()], 0x1FF, "cells outside cage untouched");
+        assert_eq!(
+            cands2[Coord::new(1, 0).index()],
+            0x1FF,
+            "cells outside cage untouched"
+        );
     }
 }

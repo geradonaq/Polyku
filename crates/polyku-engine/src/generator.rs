@@ -29,7 +29,7 @@ mod array81 {
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     pub fn serialize<S: Serializer>(v: &[u8; CELLS], s: S) -> Result<S::Ok, S::Error> {
-        (&v[..]).serialize(s)
+        v[..].serialize(s)
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<[u8; CELLS], D::Error> {
@@ -171,9 +171,7 @@ fn generate_cages(rng: &mut impl Rng, solution: &[u8; CELLS]) -> Vec<Cage> {
                     frontier.push(m + 1);
                 }
             }
-            frontier.retain(|&f| {
-                owner[f] == -1 && used_digits & (1 << (solution[f] - 1)) == 0
-            });
+            frontier.retain(|&f| owner[f] == -1 && used_digits & (1 << (solution[f] - 1)) == 0);
             if frontier.is_empty() {
                 break;
             }
@@ -246,8 +244,12 @@ fn generate_thermos(rng: &mut impl Rng, solution: &[u8; CELLS]) -> Vec<ThermoPat
 fn build_rule_data(kind: RuleKind, rng: &mut impl Rng, solution: &[u8; CELLS]) -> RuleData {
     match kind {
         RuleKind::Diagonal => RuleData::Diagonal,
-        RuleKind::Killer => RuleData::Killer { cages: generate_cages(rng, solution) },
-        RuleKind::Thermo => RuleData::Thermo { paths: generate_thermos(rng, solution) },
+        RuleKind::Killer => RuleData::Killer {
+            cages: generate_cages(rng, solution),
+        },
+        RuleKind::Thermo => RuleData::Thermo {
+            paths: generate_thermos(rng, solution),
+        },
         RuleKind::NonConsecutive => RuleData::NonConsecutive,
         RuleKind::AntiKnight => RuleData::AntiKnight,
     }
@@ -276,12 +278,19 @@ pub fn generate_with_rules(
         // Last two attempts carve a denser (easier) board: dense boards are
         // almost always ladder-solvable, and the grade filter still accepts
         // anything at or below the requested tier.
-        let carve_difficulty =
-            if attempt >= 6 { easier(difficulty) } else { difficulty };
+        let carve_difficulty = if attempt >= 6 {
+            easier(difficulty)
+        } else {
+            difficulty
+        };
         let candidate = generate_carved(rng, kinds, carve_difficulty);
         let ctx = DeductionCtx::for_rules(&candidate.rules);
         let ruleset = candidate.ruleset();
-        let engine = DeductionEngine { ctx: &ctx, rules: &ruleset, max_tier: 6 };
+        let engine = DeductionEngine {
+            ctx: &ctx,
+            rules: &ruleset,
+            max_tier: 6,
+        };
         let mut state = DeductionState::new(&candidate.givens, &ruleset);
         let outcome = engine.solve(&mut state);
         if !outcome.solved {
@@ -293,7 +302,7 @@ pub fn generate_with_rules(
             return candidate;
         }
         if candidate.grade < difficulty.target_tier()
-            && fallback.as_ref().map_or(true, |f| candidate.grade > f.grade)
+            && fallback.as_ref().is_none_or(|f| candidate.grade > f.grade)
         {
             fallback = Some(candidate);
         }
@@ -330,8 +339,10 @@ fn generate_carved(rng: &mut impl Rng, kinds: &[RuleKind], difficulty: Difficult
 
     // Phase 2: derive the data-carrying rules (cages, thermo paths), then
     // carve clues with the *full* ruleset active in the uniqueness checks.
-    let rule_data: Vec<RuleData> =
-        kinds.iter().map(|&k| build_rule_data(k, rng, &solution)).collect();
+    let rule_data: Vec<RuleData> = kinds
+        .iter()
+        .map(|&k| build_rule_data(k, rng, &solution))
+        .collect();
 
     let mut ruleset = RuleSet::new();
     for data in &rule_data {
@@ -398,10 +409,17 @@ mod tests {
         );
         let solved = solver::solve_unique(board.cells(), &ruleset).unwrap();
         assert_eq!(&solved, &p.solution);
-        assert!(ruleset.is_consistent(&p.solution), "stored solution must satisfy its rules");
+        assert!(
+            ruleset.is_consistent(&p.solution),
+            "stored solution must satisfy its rules"
+        );
 
         let ctx = DeductionCtx::for_rules(&p.rules);
-        let engine = DeductionEngine { ctx: &ctx, rules: &ruleset, max_tier: p.grade };
+        let engine = DeductionEngine {
+            ctx: &ctx,
+            rules: &ruleset,
+            max_tier: p.grade,
+        };
         let mut state = DeductionState::new(&p.givens, &ruleset);
         let outcome = engine.solve(&mut state);
         assert!(
@@ -433,7 +451,11 @@ mod tests {
     fn hard_digs_deep() {
         let mut rng = thread_rng();
         let hard = generate(&mut rng, Difficulty::Hard);
-        assert!(hard.clue_count <= 30, "hard should dig to ~22-26, got {}", hard.clue_count);
+        assert!(
+            hard.clue_count <= 30,
+            "hard should dig to ~22-26, got {}",
+            hard.clue_count
+        );
     }
 
     #[test]
@@ -444,7 +466,10 @@ mod tests {
         // test` stays quick.
         let mut rng = thread_rng();
         let beginner = generate(&mut rng, Difficulty::Beginner);
-        assert_eq!(beginner.grade, 1, "beginner must grade exactly 1 (nothing below)");
+        assert_eq!(
+            beginner.grade, 1,
+            "beginner must grade exactly 1 (nothing below)"
+        );
         assert!(generate(&mut rng, Difficulty::Easy).grade <= 2);
         if cfg!(not(debug_assertions)) {
             assert!(generate(&mut rng, Difficulty::Medium).grade <= 3);
@@ -457,16 +482,22 @@ mod tests {
     fn killer_cages_partition_the_grid() {
         let mut rng = thread_rng();
         let p = generate_with_rules(&mut rng, &[RuleKind::Killer], Difficulty::Medium);
-        let mut covered = vec![false; CELLS];
+        let mut covered = [false; CELLS];
         let mut total = 0u16;
         for data in &p.rules {
-            let RuleData::Killer { cages } = data else { panic!("expected killer") };
+            let RuleData::Killer { cages } = data else {
+                panic!("expected killer")
+            };
             for cage in cages {
                 for c in &cage.cells {
                     assert!(!covered[c.index()], "cell in two cages");
                     covered[c.index()] = true;
                 }
-                let actual: u16 = cage.cells.iter().map(|c| p.solution[c.index()] as u16).sum();
+                let actual: u16 = cage
+                    .cells
+                    .iter()
+                    .map(|c| p.solution[c.index()] as u16)
+                    .sum();
                 assert_eq!(actual, cage.sum, "cage sum must match solution");
                 total += cage.sum;
             }
@@ -480,7 +511,9 @@ mod tests {
         let mut rng = thread_rng();
         let p = generate_with_rules(&mut rng, &[RuleKind::Thermo], Difficulty::Medium);
         for data in &p.rules {
-            let RuleData::Thermo { paths } = data else { panic!("expected thermo") };
+            let RuleData::Thermo { paths } = data else {
+                panic!("expected thermo")
+            };
             for path in paths {
                 assert!(path.len() >= 3);
                 for w in path.windows(2) {

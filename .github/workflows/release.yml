@@ -1,0 +1,45 @@
+# Build and attach the portable Windows executable when a version tag is
+# pushed (v0.1.0, v1.2.3, …). The raw exe is portable: it needs no
+# installer, only the WebView2 runtime that Windows 10/11 already ship.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build (frontend + engine + app)
+        run: npm run tauri build -- --bundles none
+
+      - name: Rename portable exe
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}"
+          Copy-Item "target/release/polyku-app.exe" "Polyku_${version}_x64.exe"
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Polyku_${{ github.ref_name }}_x64.exe
+          generate_release_notes: true

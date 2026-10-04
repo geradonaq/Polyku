@@ -107,8 +107,12 @@ impl RuleData {
     pub fn build(&self) -> Box<dyn VariantRule> {
         match self {
             RuleData::Diagonal => Box::new(diagonal::Diagonal),
-            RuleData::Killer { cages } => Box::new(killer::Killer { cages: cages.clone() }),
-            RuleData::Thermo { paths } => Box::new(thermo::Thermo { paths: paths.clone() }),
+            RuleData::Killer { cages } => Box::new(killer::Killer {
+                cages: cages.clone(),
+            }),
+            RuleData::Thermo { paths } => Box::new(thermo::Thermo {
+                paths: paths.clone(),
+            }),
             RuleData::NonConsecutive => Box::new(non_consecutive::NonConsecutive),
             RuleData::AntiKnight => Box::new(anti_knight::AntiKnight),
         }

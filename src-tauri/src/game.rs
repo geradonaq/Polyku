@@ -118,7 +118,14 @@ pub fn compute_conflicts(cells: &[u8; CELLS], rules: &[RuleData]) -> Vec<usize> 
                     }
                     let (r, c) = ((i / 9) as i32, (i % 9) as i32);
                     for (dr, dc) in [
-                        (1, 2), (2, 1), (-1, 2), (-2, 1), (1, -2), (2, -1), (-1, -2), (-2, -1),
+                        (1, 2),
+                        (2, 1),
+                        (-1, 2),
+                        (-2, 1),
+                        (1, -2),
+                        (2, -1),
+                        (-1, -2),
+                        (-2, -1),
                     ] {
                         let (rr, cc) = (r + dr, c + dc);
                         if !(0..9).contains(&rr) || !(0..9).contains(&cc) {
@@ -145,8 +152,8 @@ pub fn compute_hint(active: &ActiveGame, cells: &[u8; CELLS]) -> HintDto {
     let ruleset = active.ruleset();
 
     // Error scan: any entry that contradicts the (unique) solution.
-    for i in 0..CELLS {
-        if cells[i] != 0 && cells[i] != active.solution[i] {
+    for (i, (&cell, &sol)) in cells.iter().zip(active.solution.iter()).enumerate() {
+        if cell != 0 && cell != sol {
             return HintDto {
                 kind: "error".into(),
                 technique: "Check entries".into(),
@@ -154,7 +161,7 @@ pub fn compute_hint(active: &ActiveGame, cells: &[u8; CELLS]) -> HintDto {
                 placements: vec![],
                 eliminations: vec![],
                 highlight_cells: vec![i],
-                highlight_digits: vec![cells[i]],
+                highlight_digits: vec![cell],
                 explanation: format!(
                     "Cell r{}c{} contradicts the unique solution — fix it before looking for logic.",
                     i / 9 + 1,
@@ -183,8 +190,8 @@ pub fn compute_hint(active: &ActiveGame, cells: &[u8; CELLS]) -> HintDto {
         rules: &ruleset,
         max_tier: 6,
     };
-    let mut state = polyku_engine::deduction::DeductionState::new(cells, &ruleset);
-    match engine.hint(&mut state) {
+    let state = polyku_engine::deduction::DeductionState::new(cells, &ruleset);
+    match engine.hint(&state) {
         Some(step) => HintDto {
             kind: "technique".into(),
             technique: step.technique.clone(),
@@ -215,7 +222,9 @@ pub fn compute_hint(active: &ActiveGame, cells: &[u8; CELLS]) -> HintDto {
 pub fn compute_candidates(cells: &[u8; CELLS], rules: &[RuleData]) -> Vec<Vec<u8>> {
     let ruleset = ruleset_of(rules);
     let state = polyku_engine::deduction::DeductionState::new(cells, &ruleset);
-    (0..CELLS).map(|i| polyku_engine::deduction::digits_of(state.cands[i])).collect()
+    (0..CELLS)
+        .map(|i| polyku_engine::deduction::digits_of(state.cands[i]))
+        .collect()
 }
 
 /// Builds a live ruleset from serializable rule data.

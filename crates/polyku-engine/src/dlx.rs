@@ -69,10 +69,25 @@ impl ExactCover {
             // Callers use 0-based columns; headers live at 1..=columns.
             let c = c0 + 1;
             // Horizontally: circular row list. Vertically: bottom of column.
-            let prev = if k == 0 { first + columns.len() - 1 } else { self.nodes.len() - 1 };
-            let next = if k + 1 == columns.len() { first } else { self.nodes.len() + 1 };
+            let prev = if k == 0 {
+                first + columns.len() - 1
+            } else {
+                self.nodes.len() - 1
+            };
+            let next = if k + 1 == columns.len() {
+                first
+            } else {
+                self.nodes.len() + 1
+            };
             let up = self.nodes[c].up;
-            self.nodes.push(Node { left: prev, right: next, up, down: c, col: c, row_id: id });
+            self.nodes.push(Node {
+                left: prev,
+                right: next,
+                up,
+                down: c,
+                col: c,
+                row_id: id,
+            });
             self.nodes[up].down = self.nodes.len() - 1;
             self.nodes[c].up = self.nodes.len() - 1;
             self.col_size[c] += 1;

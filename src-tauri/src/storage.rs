@@ -5,7 +5,7 @@
 
 use crate::dto::{SaveGame, Stats};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// The real Polyku data directory (created on demand).
 pub fn data_dir() -> PathBuf {
@@ -16,7 +16,7 @@ pub fn data_dir() -> PathBuf {
     dir
 }
 
-pub fn save_game_in(dir: &PathBuf, save: &SaveGame) -> Result<(), String> {
+pub fn save_game_in(dir: &Path, save: &SaveGame) -> Result<(), String> {
     let path = dir.join("save.json");
     let json = serde_json::to_string_pretty(save).map_err(|e| e.to_string())?;
     // Write-then-rename so a crash mid-write can't corrupt the save.
@@ -25,7 +25,7 @@ pub fn save_game_in(dir: &PathBuf, save: &SaveGame) -> Result<(), String> {
     fs::rename(&tmp, &path).map_err(|e| e.to_string())
 }
 
-pub fn load_game_in(dir: &PathBuf) -> Result<Option<SaveGame>, String> {
+pub fn load_game_in(dir: &Path) -> Result<Option<SaveGame>, String> {
     let path = dir.join("save.json");
     if !path.exists() {
         return Ok(None);
@@ -36,13 +36,13 @@ pub fn load_game_in(dir: &PathBuf) -> Result<Option<SaveGame>, String> {
         .map_err(|e| format!("corrupt save file: {e}"))
 }
 
-pub fn save_stats_in(dir: &PathBuf, stats: &Stats) -> Result<(), String> {
+pub fn save_stats_in(dir: &Path, stats: &Stats) -> Result<(), String> {
     let path = dir.join("stats.json");
     let json = serde_json::to_string_pretty(stats).map_err(|e| e.to_string())?;
     fs::write(&path, json).map_err(|e| e.to_string())
 }
 
-pub fn load_stats_in(dir: &PathBuf) -> Result<Stats, String> {
+pub fn load_stats_in(dir: &Path) -> Result<Stats, String> {
     let path = dir.join("stats.json");
     if !path.exists() {
         return Ok(Stats::default());

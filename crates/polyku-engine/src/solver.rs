@@ -6,7 +6,7 @@
 //! MRV cell choice and per-node candidate pruning by the active rules.
 //! Solution counting with a limit of 2 is the uniqueness proof, same as M1.
 
-use crate::grid::{Coord, Grid, DigitMask, CELLS};
+use crate::grid::{Coord, DigitMask, Grid, CELLS};
 use crate::rules::RuleSet;
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -141,12 +141,12 @@ fn fill_backtrack(
                 // "absolutely random" flavor of the solution comes from.
                 let i = min_cells[rng.gen_range(0..min_cells.len())];
                 let mask = cands[i];
-                let mut digits: Vec<u8> =
-                    (1..=9).filter(|&d| mask & (1 << (d - 1)) != 0).collect();
+                let mut digits: Vec<u8> = (1..=9).filter(|&d| mask & (1 << (d - 1)) != 0).collect();
                 digits.shuffle(rng);
                 let c = Coord::from_index(i);
                 for d in digits {
-                    grid.place(c, d).expect("candidate came from the grid itself");
+                    grid.place(c, d)
+                        .expect("candidate came from the grid itself");
                     cells[i] = d;
                     if fill_backtrack(cells, grid, rules, rng) {
                         return true; // keep this level's assignments — part of the solution
@@ -250,7 +250,9 @@ impl SearchState<'_> {
                 Some(i) => {
                     let d = cands[i].trailing_zeros() as u8 + 1;
                     let c = Coord::from_index(i);
-                    self.grid.place(c, d).expect("forced candidate is classic-legal");
+                    self.grid
+                        .place(c, d)
+                        .expect("forced candidate is classic-legal");
                     cells[i] = d;
                     assigned.push(i);
                     // Loop again — this assignment may cascade further.
@@ -263,7 +265,9 @@ impl SearchState<'_> {
                         if mask & (1 << (d - 1)) == 0 {
                             continue;
                         }
-                        self.grid.place(c, d).expect("candidate came from the grid itself");
+                        self.grid
+                            .place(c, d)
+                            .expect("candidate came from the grid itself");
                         cells[branch] = d;
                         self.search(cells);
                         cells[branch] = 0;
@@ -292,18 +296,19 @@ mod tests {
     use super::*;
     use crate::rules::{diagonal::Diagonal, RuleData};
 
-    const EASY: &str = "530070000600195000098000060800060003400803001700020006060000280000419005000080079";
+    const EASY: &str =
+        "530070000600195000098000060800060003400803001700020006060000280000419005000080079";
 
     #[test]
     fn classic_boards_match_the_dlx_solver() {
         // Cross-validation: with an empty RuleSet, the generalized solver
         // must agree with the DLX exact-cover solver.
         assert_eq!(
-            count_solutions(&Grid::parse(EASY).cells(), &RuleSet::new(), 2),
+            count_solutions(Grid::parse(EASY).cells(), &RuleSet::new(), 2),
             crate::sudoku::count_solutions(&Grid::parse(EASY), 2)
         );
         assert_eq!(
-            count_solutions(&Grid::new().cells(), &RuleSet::new(), 2),
+            count_solutions(Grid::new().cells(), &RuleSet::new(), 2),
             crate::sudoku::count_solutions(&Grid::new(), 2)
         );
     }

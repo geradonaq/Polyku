@@ -9,7 +9,16 @@ pub struct AntiKnight;
 fn knight_targets(idx: usize) -> Vec<usize> {
     let (r, c) = ((idx / 9) as i32, (idx % 9) as i32);
     let mut out = Vec::new();
-    for (dr, dc) in [(1, 2), (2, 1), (-1, 2), (-2, 1), (1, -2), (2, -1), (-1, -2), (-2, -1)] {
+    for (dr, dc) in [
+        (1, 2),
+        (2, 1),
+        (-1, 2),
+        (-2, 1),
+        (1, -2),
+        (2, -1),
+        (-1, -2),
+        (-2, -1),
+    ] {
         let (rr, cc) = (r + dr, c + dc);
         if (0..9).contains(&rr) && (0..9).contains(&cc) {
             out.push(rr as usize * 9 + cc as usize);
@@ -84,7 +93,11 @@ mod tests {
         let mut cands = [0x1FF; CELLS];
         AntiKnight.prune(&cells, &mut cands);
         let knight_cell = Coord::new(2, 5).index();
-        assert_eq!(cands[knight_cell] & (1 << 7), 0, "digit 8 banned at knight move");
+        assert_eq!(
+            cands[knight_cell] & (1 << 7),
+            0,
+            "digit 8 banned at knight move"
+        );
         let far_cell = Coord::new(0, 0).index();
         assert_eq!(cands[far_cell], 0x1FF, "unrelated cell untouched");
     }

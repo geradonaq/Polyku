@@ -1,0 +1,53 @@
+# Test on every push to main and every pull request.
+# Rust: fmt + clippy + the full test suites (release mode runs the
+# 100-puzzle uniqueness sweeps per variant). Frontend: vitest + tsc build.
+
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Engine tests (includes 100-puzzle uniqueness sweeps)
+        run: cargo test -p polyku-engine --release
+
+      - name: Host tests
+        run: cargo test -p polyku-app
+
+  frontend:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npx vitest run
+
+      - name: Type-check and build
+        run: npm run build

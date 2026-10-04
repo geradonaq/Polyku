@@ -126,8 +126,9 @@ impl Grid {
 
     /// Bitmask of digits still placeable at `c` under classic rules.
     pub fn candidates(&self, c: Coord) -> DigitMask {
-        let used =
-            self.row_used[c.row as usize] | self.col_used[c.col as usize] | self.box_used[c.box_index()];
+        let used = self.row_used[c.row as usize]
+            | self.col_used[c.col as usize]
+            | self.box_used[c.box_index()];
         !used & ALL_DIGITS
     }
 
@@ -213,7 +214,9 @@ mod tests {
 
     #[test]
     fn parse_reads_rows_and_columns() {
-        let g = Grid::parse("53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79");
+        let g = Grid::parse(
+            "53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79",
+        );
         assert_eq!(g.get(Coord::new(0, 0)), 5);
         assert_eq!(g.get(Coord::new(0, 1)), 3);
         assert_eq!(g.get(Coord::new(8, 8)), 9);

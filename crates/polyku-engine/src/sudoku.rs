@@ -62,10 +62,15 @@ fn build(puzzle: &Grid) -> Option<ExactCover> {
         let digits: Vec<u8> = if given != 0 {
             vec![given]
         } else {
-            (1..=9).filter(|&d| puzzle.candidates(c) & (1 << (d - 1)) != 0).collect()
+            (1..=9)
+                .filter(|&d| puzzle.candidates(c) & (1 << (d - 1)) != 0)
+                .collect()
         };
         for d in digits {
-            p.add_row(placement_id(c.row, c.col, d), &constraint_columns(c.row, c.col, d));
+            p.add_row(
+                placement_id(c.row, c.col, d),
+                &constraint_columns(c.row, c.col, d),
+            );
         }
     }
     Some(p)
@@ -100,8 +105,10 @@ pub fn solve_unique(puzzle: &Grid) -> Option<Grid> {
 mod tests {
     use super::*;
 
-    const EASY: &str = "530070000600195000098000060800060003400803001700020006060000280000419005000080079";
-    const EASY_SOLUTION: &str = "534678912672195348198342567859761423426853791713924856961537284287419635345286179";
+    const EASY: &str =
+        "530070000600195000098000060800060003400803001700020006060000280000419005000080079";
+    const EASY_SOLUTION: &str =
+        "534678912672195348198342567859761423426853791713924856961537284287419635345286179";
 
     #[test]
     fn solves_known_puzzle_to_known_solution() {
@@ -138,7 +145,8 @@ mod tests {
         // Two 5s in the same box among the givens — a contradiction before
         // solving even starts. Built via the test-only unchecked constructor
         // because Grid's normal API cannot represent illegal boards.
-        let text = "5300700005..195000098000060800060003400803001700020006060000280000419005000080079";
+        let text =
+            "5300700005..195000098000060800060003400803001700020006060000280000419005000080079";
         assert_eq!(count_solutions(&Grid::parse_unchecked(text), 2), 0);
     }
 }
