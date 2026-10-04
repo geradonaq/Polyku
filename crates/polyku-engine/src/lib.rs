@@ -10,6 +10,7 @@
 //! M3 will add the human-logic deduction engine (technique-based grading
 //! and hints).
 
+pub mod deduction;
 pub mod dlx;
 pub mod generator;
 pub mod grid;

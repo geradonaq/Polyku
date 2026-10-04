@@ -14,34 +14,54 @@
 //! Difficulty in M2 is a clue-count target; milestone M3 replaces this with
 //! technique-based grading and a no-guessing filter.
 
+use crate::deduction::{DeductionCtx, DeductionEngine, DeductionState};
 use crate::grid::{Coord, Grid, CELLS};
 use crate::rules::{Cage, RuleData, RuleKind, RuleSet, ThermoPath};
 use crate::solver;
 use rand::seq::SliceRandom;
 use rand::Rng;
 
-/// Difficulty presets for M2 (clue-count based; technique-based in M3).
+/// The six honest difficulty tiers. A puzzle's difficulty is the hardest
+/// human-logic technique it requires (graded by the deduction engine), not
+/// a clue count — clue targets only steer the carving.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Difficulty {
+    Beginner,
     Easy,
     Medium,
     Hard,
+    Expert,
+    Master,
 }
 
 impl Difficulty {
     /// Carving stops once this many clues remain.
-    /// `Hard` digs to the random minimum (~22–26 clues).
     fn target_clues(self) -> usize {
         match self {
+            Difficulty::Beginner => 45,
             Difficulty::Easy => 38,
             Difficulty::Medium => 32,
-            Difficulty::Hard => 0,
+            Difficulty::Hard => 26,
+            Difficulty::Expert => 24,
+            Difficulty::Master => 22,
+        }
+    }
+
+    /// The technique tier this difficulty asks for (see `deduction`).
+    fn target_tier(self) -> u8 {
+        match self {
+            Difficulty::Beginner => 1,
+            Difficulty::Easy => 2,
+            Difficulty::Medium => 3,
+            Difficulty::Hard => 4,
+            Difficulty::Expert => 5,
+            Difficulty::Master => 6,
         }
     }
 }
 
-/// A finished product: what the player sees, plus the hidden solution
-/// and the rule instances that shape it.
+/// A finished product: what the player sees, plus the hidden solution,
+/// the rule instances that shape it, and its graded difficulty.
 #[derive(Clone, Debug)]
 pub struct Puzzle {
     /// The board with holes; 0 = empty cell.
@@ -52,6 +72,9 @@ pub struct Puzzle {
     pub rules: Vec<RuleData>,
     pub difficulty: Difficulty,
     pub clue_count: usize,
+    /// Graded hardest technique tier (1–6) actually required. The no-guess
+    /// guarantee: the ladder solves the puzzle using techniques ≤ `grade`.
+    pub grade: u8,
 }
 
 impl Puzzle {
@@ -215,13 +238,66 @@ pub fn generate(rng: &mut impl Rng, difficulty: Difficulty) -> Puzzle {
 }
 
 /// Generates a puzzle under classic rules *plus* the requested rule kinds.
-/// Variant data is derived from the random solution and participates in the
-/// uniqueness checks, so any stack combination just works.
+///
+/// Pipeline: fill a random solution → derive variant data from it → carve
+/// clues (uniqueness proven per removal) → **grade with the deduction
+/// engine**. Any puzzle the ladder cannot finish needs guessing and is
+/// discarded — the no-guessing guarantee. Puzzles grading exactly at the
+/// requested tier win; the closest-below attempt is kept as a fallback so
+/// rare upper tiers can't stall generation.
 pub fn generate_with_rules(
     rng: &mut impl Rng,
     kinds: &[RuleKind],
     difficulty: Difficulty,
 ) -> Puzzle {
+    let mut fallback: Option<Puzzle> = None;
+    for attempt in 0..8 {
+        // Last two attempts carve a denser (easier) board: dense boards are
+        // almost always ladder-solvable, and the grade filter still accepts
+        // anything at or below the requested tier.
+        let carve_difficulty =
+            if attempt >= 6 { easier(difficulty) } else { difficulty };
+        let candidate = generate_carved(rng, kinds, carve_difficulty);
+        let ctx = DeductionCtx::for_rules(&candidate.rules);
+        let ruleset = candidate.ruleset();
+        let engine = DeductionEngine { ctx: &ctx, rules: &ruleset, max_tier: 6 };
+        let mut state = DeductionState::new(&candidate.givens, &ruleset);
+        let outcome = engine.solve(&mut state);
+        if !outcome.solved {
+            continue; // needs trial-and-error — not human-deducible, discard
+        }
+        let mut candidate = candidate;
+        candidate.grade = outcome.max_tier;
+        if candidate.grade == difficulty.target_tier() {
+            return candidate;
+        }
+        if candidate.grade < difficulty.target_tier()
+            && fallback.as_ref().map_or(true, |f| candidate.grade > f.grade)
+        {
+            fallback = Some(candidate);
+        }
+    }
+    fallback.expect(
+        "ladder-solvable puzzles are the norm; 8 attempts failing entirely \
+         indicates an engine/rule bug",
+    )
+}
+
+/// Two rungs down the difficulty ladder — used for last-resort carving.
+fn easier(difficulty: Difficulty) -> Difficulty {
+    match difficulty {
+        Difficulty::Beginner => Difficulty::Beginner,
+        Difficulty::Easy => Difficulty::Beginner,
+        Difficulty::Medium => Difficulty::Easy,
+        Difficulty::Hard => Difficulty::Easy,
+        Difficulty::Expert => Difficulty::Medium,
+        Difficulty::Master => Difficulty::Medium,
+    }
+}
+
+/// One carve pass: random solution, derived rules, uniqueness-preserving
+/// clue digging. No grading — see `generate_with_rules`.
+fn generate_carved(rng: &mut impl Rng, kinds: &[RuleKind], difficulty: Difficulty) -> Puzzle {
     // Phase 1: fill a solution under the self-contained rules only
     // (Killer/Thermo placeholders contribute nothing — their data comes
     // from the solution itself in phase 2).
@@ -276,6 +352,7 @@ pub fn generate_with_rules(
         rules: rule_data,
         difficulty,
         clue_count,
+        grade: 0,
     }
 }
 
@@ -285,7 +362,9 @@ mod tests {
     use rand::thread_rng;
 
     /// Verifies a generated puzzle end to end: unique solution, the stored
-    /// solution actually solves it, and every active rule is satisfied by it.
+    /// solution actually solves it, every active rule is satisfied by it,
+    /// and the no-guess guarantee holds (ladder within the graded tier
+    /// finishes the puzzle).
     fn assert_valid(p: &Puzzle) {
         let board = p.grid();
         let ruleset = p.ruleset();
@@ -299,6 +378,16 @@ mod tests {
         let solved = solver::solve_unique(board.cells(), &ruleset).unwrap();
         assert_eq!(&solved, &p.solution);
         assert!(ruleset.is_consistent(&p.solution), "stored solution must satisfy its rules");
+
+        let ctx = DeductionCtx::for_rules(&p.rules);
+        let engine = DeductionEngine { ctx: &ctx, rules: &ruleset, max_tier: p.grade };
+        let mut state = DeductionState::new(&p.givens, &ruleset);
+        let outcome = engine.solve(&mut state);
+        assert!(
+            outcome.solved,
+            "no-guess guarantee: ladder within grade {} must solve the puzzle",
+            p.grade
+        );
     }
 
     #[test]
@@ -324,6 +413,23 @@ mod tests {
         let mut rng = thread_rng();
         let hard = generate(&mut rng, Difficulty::Hard);
         assert!(hard.clue_count <= 30, "hard should dig to ~22-26, got {}", hard.clue_count);
+    }
+
+    #[test]
+    fn grades_respect_the_requested_tier() {
+        // The no-guess filter only accepts puzzles grading at or below the
+        // requested tier (exact match preferred, closest-below as fallback).
+        // Release runs every tier; debug keeps the cheap ones so `cargo
+        // test` stays quick.
+        let mut rng = thread_rng();
+        let beginner = generate(&mut rng, Difficulty::Beginner);
+        assert_eq!(beginner.grade, 1, "beginner must grade exactly 1 (nothing below)");
+        assert!(generate(&mut rng, Difficulty::Easy).grade <= 2);
+        if cfg!(not(debug_assertions)) {
+            assert!(generate(&mut rng, Difficulty::Medium).grade <= 3);
+            assert!(generate(&mut rng, Difficulty::Hard).grade <= 4);
+            assert!(generate(&mut rng, Difficulty::Expert).grade <= 5);
+        }
     }
 
     #[test]

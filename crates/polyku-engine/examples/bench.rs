@@ -25,6 +25,13 @@ fn main() {
     for (name, kinds, difficulty) in cases {
         let t = Instant::now();
         let p = generate_with_rules(&mut rng, &kinds, difficulty);
-        println!("{:<22} {:>10?} — {} clues", name, t.elapsed(), p.clue_count);
+        println!(
+            "{:<22} {:>10?} — {} clues, grade {} (asked {:?})",
+            name,
+            t.elapsed(),
+            p.clue_count,
+            p.grade,
+            difficulty
+        );
     }
 }
