@@ -4,6 +4,12 @@ Modern, standalone, offline sudoku for Windows. Every puzzle is freshly
 generated on your machine — always unique, always solvable by human logic
 alone, never the same twice.
 
+![Polyku in play](docs/screenshot.png)
+
+<em>The new-game dialog: six graded tiers and stackable variant rules.</em>
+
+![The new-game dialog](docs/screenshot-newgame.png)
+
 ## Why Polyku
 
 - **Procedural generation with proof.** Every puzzle is carved from a random
