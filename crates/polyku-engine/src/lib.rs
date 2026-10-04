@@ -1,17 +1,20 @@
 //! Polyku's sudoku engine — generation, solving, and variant rules.
 //!
-//! Current milestone (M1): the classic 9×9 core.
-//! - [`grid`]: the board with bitmask bookkeeping
-//! - [`dlx`]: Dancing Links exact-cover solver
-//! - [`sudoku`]: sudoku ↔ exact-cover mapping (uniqueness proofs live here)
+//! - [`grid`]: the classic 9×9 board with bitmask bookkeeping
+//! - [`dlx`]: Dancing Links exact-cover solver (classic specialist)
+//! - [`sudoku`]: sudoku ↔ exact-cover mapping (classic uniqueness proofs)
+//! - [`rules`]: the `VariantRule` trait — additional rules on top of classic
+//! - [`solver`]: ruleset-aware backtracking solver for any rule combination
 //! - [`generator`]: randomized puzzle generation, unique by construction
 //!
-//! M2 will add the `VariantRule` trait and the first variants;
-//! M3 the human-logic deduction engine.
+//! M3 will add the human-logic deduction engine (technique-based grading
+//! and hints).
 
 pub mod dlx;
 pub mod generator;
 pub mod grid;
+pub mod rules;
+pub mod solver;
 pub mod sudoku;
 
 /// Returns the engine's package version.

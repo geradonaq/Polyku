@@ -5,6 +5,8 @@
 //! computation a few bitwise operations — the workhorse of both the
 //! solver and the generator.
 
+use serde::{Deserialize, Serialize};
+
 /// Number of rows/columns/boxes — always 9 for classic sudoku.
 pub const SIZE: usize = 9;
 /// Total cell count of the grid.
@@ -17,7 +19,7 @@ pub type DigitMask = u16;
 pub const ALL_DIGITS: DigitMask = 0x1FF;
 
 /// A cell position on the grid.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Coord {
     pub row: u8,
     pub col: u8,
