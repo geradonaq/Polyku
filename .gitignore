@@ -32,3 +32,6 @@ src-tauri/gen/
 # ZCode workspace artifacts
 .zcode/
 .zcodeignore
+
+# Learning playground (Rustlings exercises)
+learning/

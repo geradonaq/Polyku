@@ -17,7 +17,7 @@ const CONSTRAINTS: usize = 4 * CELLS;
 
 /// Flat row id for a placement — encodes (row, col, digit) in 9 bits each.
 pub fn placement_id(r: u8, c: u8, d: u8) -> u32 {
-    ((r as u32 * 9 + c as u32) * 9 + (d as u32 - 1))
+    (r as u32 * 9 + c as u32) * 9 + (d as u32 - 1)
 }
 
 pub fn decode_placement(id: u32) -> (Coord, u8) {
