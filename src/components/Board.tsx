@@ -1,15 +1,19 @@
 // The 9×9 board: cells + the SVG overlay layer (cages, thermos, stripes).
 
 import type { Overlay, PuzzleDto, RuleData } from "../types";
+import { markBg, markText } from "../theme";
 import { BOARD, cageEdges, cageLabelSpot, cellCenter, overlaysOfRules, thermoLine } from "../overlay";
 
 interface BoardProps {
   puzzle: PuzzleDto;
   cells: number[];
   notes: number[][];
+  marks: number[];
   selected: number[];
   conflicts: number[];
   heldDigit: number | null;
+  digitHl: Set<number>;
+  notesView: "grid" | "badges";
   hintCells: number[];
   hintElims: Set<string>; // "cell:digit" — candidates the hint removes
   onCellDown: (index: number, additive: boolean) => void;
@@ -98,8 +102,8 @@ function Overlays({ rules }: { rules: RuleData[] }) {
 }
 
 export function Board({
-  puzzle, cells, notes, selected, conflicts, heldDigit, hintCells, hintElims,
-  onCellDown, onCellEnter,
+  puzzle, cells, notes, marks, selected, conflicts, heldDigit, digitHl,
+  notesView, hintCells, hintElims, onCellDown, onCellEnter,
 }: BoardProps) {
   const selSet = new Set(selected);
   const primary = selected[selected.length - 1];
@@ -143,6 +147,8 @@ export function Board({
               : isGiven
                 ? "text-zinc-800 dark:text-zinc-100"
                 : "text-sky-600 dark:text-sky-300";
+            // Digit highlighting (palette colors override the defaults).
+            const hl = value !== 0 && digitHl.has(value) ? markText(value) : undefined;
 
             return (
               <button
@@ -161,32 +167,51 @@ export function Board({
                     "z-10 ring-[3px] ring-inset ring-amber-500/80 dark:ring-amber-400/80",
                   heldDigit !== null && !isGiven ? "cursor-crosshair" : "cursor-pointer",
                 ].join(" ")}
+                style={markBg(marks[i]) ? { backgroundColor: markBg(marks[i]) } : undefined}
               >
                 {value !== 0 ? (
-                  <span className={`text-3xl font-semibold leading-none ${text}`}>
+                  <span
+                    className={`text-3xl font-semibold leading-none ${text}`}
+                    style={hl ? { color: hl } : undefined}
+                  >
                     {value}
                   </span>
                 ) : notes[i].length > 0 ? (
-                  <span className="grid h-full w-full grid-cols-3 grid-rows-3 place-items-center text-[clamp(11px,2.3vw,24px)] font-medium leading-none text-zinc-500 dark:text-zinc-300">
-                    {Array.from({ length: 9 }, (_, k) => {
-                      const d = k + 1;
-                      const noted = notes[i].includes(d);
-                      const eliminated = hintElims.has(`${i}:${d}`);
-                      return (
+                  notesView === "grid" ? (
+                    <span className="grid h-full w-full grid-cols-3 grid-rows-3 place-items-center text-[clamp(11px,2.3vw,24px)] font-medium leading-none text-zinc-500 dark:text-zinc-300">
+                      {Array.from({ length: 9 }, (_, k) => {
+                        const d = k + 1;
+                        const noted = notes[i].includes(d);
+                        const eliminated = hintElims.has(`${i}:${d}`);
+                        return (
+                          <span
+                            key={k}
+                            className={[
+                              "flex items-center justify-center",
+                              noted && eliminated
+                                ? "text-red-500 line-through dark:text-red-400"
+                                : "",
+                            ].join(" ")}
+                            style={noted && digitHl.has(d) ? { color: markText(d) } : undefined}
+                          >
+                            {noted ? d : ""}
+                          </span>
+                        );
+                      })}
+                    </span>
+                  ) : (
+                    <span className="flex flex-wrap items-center justify-center gap-x-1 px-1 text-[clamp(10px,1.9vw,19px)] font-medium leading-none text-zinc-500 dark:text-zinc-300">
+                      {notes[i].map((d) => (
                         <span
-                          key={k}
-                          className={[
-                            "flex items-center justify-center",
-                            noted && eliminated
-                              ? "text-red-500 line-through dark:text-red-400"
-                              : "",
-                          ].join(" ")}
+                          key={d}
+                          className={hintElims.has(`${i}:${d}`) ? "text-red-500 line-through dark:text-red-400" : ""}
+                          style={digitHl.has(d) ? { color: markText(d) } : undefined}
                         >
-                          {noted ? d : ""}
+                          {d}
                         </span>
-                      );
-                    })}
-                  </span>
+                      ))}
+                    </span>
+                  )
                 ) : null}
               </button>
             );

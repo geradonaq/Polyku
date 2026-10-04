@@ -34,6 +34,9 @@ pub struct SaveGame {
     pub cells: Vec<u8>,
     /// Pencil marks: for every cell, the digits noted.
     pub notes: Vec<Vec<u8>>,
+    /// Cell marking colors: 0 = none, 1–9 = palette index.
+    #[serde(default)]
+    pub marks: Vec<u8>,
     pub elapsed_secs: u64,
     /// Unix timestamp of the save.
     pub saved_at: u64,
@@ -114,6 +117,7 @@ pub fn parse_rules(names: &[String]) -> Result<Vec<RuleKindName>, String> {
             "killer" => out.push(polyku_engine::rules::RuleKind::Killer),
             "thermo" => out.push(polyku_engine::rules::RuleKind::Thermo),
             "non_consecutive" => out.push(polyku_engine::rules::RuleKind::NonConsecutive),
+            "anti_knight" => out.push(polyku_engine::rules::RuleKind::AntiKnight),
             other => return Err(format!("unknown rule: {other}")),
         }
     }
@@ -133,6 +137,7 @@ pub fn rule_names(rules: &[RuleData]) -> Vec<String> {
             RuleData::Killer { .. } => Some("killer".to_string()),
             RuleData::Thermo { .. } => Some("thermo".to_string()),
             RuleData::NonConsecutive => Some("non_consecutive".to_string()),
+            RuleData::AntiKnight => Some("anti_knight".to_string()),
         })
         .collect()
 }

@@ -43,8 +43,8 @@ export function overlaysOfRules(rules: RuleData[]): Overlay[] {
     if (rule === "Diagonal") {
       out.push({ DiagonalStripe: { main: true } });
       out.push({ DiagonalStripe: { main: false } });
-    } else if (rule === "NonConsecutive") {
-      // invisible rule
+    } else if (rule === "NonConsecutive" || rule === "AntiKnight") {
+      // invisible rules
     } else if ("Killer" in rule) {
       for (const cage of rule.Killer.cages) out.push({ Cage: { cells: cage.cells, sum: cage.sum } });
     } else if ("Thermo" in rule) {

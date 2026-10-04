@@ -9,6 +9,7 @@
 //! Adding a variant = one struct implementing `VariantRule` + one entry in
 //! [`RuleData`] — no solver or UI changes. That's the open-source hook.
 
+pub mod anti_knight;
 pub mod diagonal;
 pub mod killer;
 pub mod non_consecutive;
@@ -99,6 +100,7 @@ pub enum RuleData {
     Killer { cages: Vec<Cage> },
     Thermo { paths: Vec<ThermoPath> },
     NonConsecutive,
+    AntiKnight,
 }
 
 impl RuleData {
@@ -108,6 +110,7 @@ impl RuleData {
             RuleData::Killer { cages } => Box::new(killer::Killer { cages: cages.clone() }),
             RuleData::Thermo { paths } => Box::new(thermo::Thermo { paths: paths.clone() }),
             RuleData::NonConsecutive => Box::new(non_consecutive::NonConsecutive),
+            RuleData::AntiKnight => Box::new(anti_knight::AntiKnight),
         }
     }
 }
@@ -120,6 +123,7 @@ pub enum RuleKind {
     Killer,
     Thermo,
     NonConsecutive,
+    AntiKnight,
 }
 
 impl From<RuleKind> for RuleData {
@@ -129,6 +133,7 @@ impl From<RuleKind> for RuleData {
             RuleKind::Killer => RuleData::Killer { cages: Vec::new() },
             RuleKind::Thermo => RuleData::Thermo { paths: Vec::new() },
             RuleKind::NonConsecutive => RuleData::NonConsecutive,
+            RuleKind::AntiKnight => RuleData::AntiKnight,
         }
     }
 }

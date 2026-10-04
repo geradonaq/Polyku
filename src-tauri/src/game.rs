@@ -111,6 +111,27 @@ pub fn compute_conflicts(cells: &[u8; CELLS], rules: &[RuleData]) -> Vec<usize> 
                     }
                 }
             }
+            RuleData::AntiKnight => {
+                for i in 0..CELLS {
+                    if cells[i] == 0 {
+                        continue;
+                    }
+                    let (r, c) = ((i / 9) as i32, (i % 9) as i32);
+                    for (dr, dc) in [
+                        (1, 2), (2, 1), (-1, 2), (-2, 1), (1, -2), (2, -1), (-1, -2), (-2, -1),
+                    ] {
+                        let (rr, cc) = (r + dr, c + dc);
+                        if !(0..9).contains(&rr) || !(0..9).contains(&cc) {
+                            continue;
+                        }
+                        let j = rr as usize * 9 + cc as usize;
+                        if cells[j] == cells[i] {
+                            bad.insert(i);
+                            bad.insert(j);
+                        }
+                    }
+                }
+            }
         }
     }
 

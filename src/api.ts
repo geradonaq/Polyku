@@ -17,8 +17,11 @@ export const api = {
   fillCandidates: (cells: number[]): Promise<number[][]> =>
     invoke("fill_candidates", { cells }),
 
-  saveGame: (cells: number[], notes: number[][], elapsedSecs: number): Promise<void> =>
-    invoke("save_game", { cells, notes, elapsedSecs }),
+  saveGame: (cells: number[], notes: number[][], marks: number[], elapsedSecs: number): Promise<void> =>
+    invoke("save_game", { cells, notes, marks, elapsedSecs }),
+
+  cleanEntries: (cells: number[], targets: number[]): Promise<number[]> =>
+    invoke("clean_entries", { cells, targets }),
 
   loadGame: (): Promise<SaveGame | null> => invoke("load_game"),
 

@@ -70,6 +70,7 @@ mod tests {
             grade: 2,
             cells: vec![0u8; 81],
             notes: vec![vec![]; 81],
+            marks: vec![0u8; 81],
             elapsed_secs: 42,
             saved_at: 1_700_000_000,
         }

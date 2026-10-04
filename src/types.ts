@@ -18,6 +18,7 @@ export type ThermoPath = Coord[];
 export type RuleData =
   | "Diagonal"
   | "NonConsecutive"
+  | "AntiKnight"
   | { Killer: { cages: Cage[] } }
   | { Thermo: { paths: ThermoPath[] } };
 
@@ -45,6 +46,7 @@ export interface SaveGame {
   grade: number;
   cells: number[];
   notes: number[][];
+  marks: number[];
   elapsed_secs: number;
   saved_at: number;
 }
@@ -73,7 +75,7 @@ export interface HintDto {
 }
 
 /// Rule ids the frontend sends back to the host.
-export const RULE_IDS = ["diagonal", "killer", "thermo", "non_consecutive"] as const;
+export const RULE_IDS = ["diagonal", "killer", "thermo", "non_consecutive", "anti_knight"] as const;
 export type RuleId = (typeof RULE_IDS)[number];
 
 export const RULE_LABELS: Record<RuleId, string> = {
@@ -81,6 +83,7 @@ export const RULE_LABELS: Record<RuleId, string> = {
   killer: "Killer",
   thermo: "Thermo",
   non_consecutive: "Non-Consecutive",
+  anti_knight: "Anti-Knight",
 };
 
 export const DIFFICULTIES = [
@@ -97,4 +100,13 @@ export type Difficulty = (typeof DIFFICULTIES)[number];
 export function tierName(grade: number): string {
   const names = ["Beginner", "Easy", "Medium", "Hard", "Expert", "Master"];
   return names[grade - 1] ?? `Tier ${grade}`;
+}
+
+/// Short badge names for the active rules.
+export function ruleShortName(rule: RuleData): string {
+  if (rule === "Diagonal") return "X";
+  if (rule === "NonConsecutive") return "NC";
+  if (rule === "AntiKnight") return "Anti-N";
+  if ("Killer" in rule) return "Killer";
+  return "Thermo";
 }

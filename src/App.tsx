@@ -7,7 +7,7 @@ import { NewGameModal } from "./components/NewGameModal";
 import { StatsModal, WinModal } from "./components/Modals";
 import { TopBar } from "./components/TopBar";
 import { useGame } from "./game/useGame";
-import type { RuleId } from "./types";
+import { ruleShortName, type RuleId } from "./types";
 
 const DIGIT_KEYS = new Set(["1", "2", "3", "4", "5", "6", "7", "8", "9"]);
 
@@ -139,9 +139,7 @@ export default function App() {
   const digitCounts = Array.from({ length: 9 }, (_, k) =>
     cells.filter((d) => d === k + 1).length,
   );
-  const variantNames = (puzzle?.rules ?? []).map((r) =>
-    r === "Diagonal" ? "X" : r === "NonConsecutive" ? "NC" : "Killer" in r ? "Killer" : "Thermo",
-  );
+  const variantNames = (puzzle?.rules ?? []).map(ruleShortName);
 
   return (
     <div className={theme === "dark" ? "dark" : ""}>
@@ -167,9 +165,12 @@ export default function App() {
               puzzle={puzzle}
               cells={cells}
               notes={game.notes}
+              marks={game.marks}
               selected={selected}
               conflicts={game.conflicts}
               heldDigit={game.heldDigit}
+              digitHl={game.digitHl}
+              notesView={game.notesView}
               hintCells={game.hint?.highlight_cells ?? []}
               hintElims={
                 new Set(
@@ -192,6 +193,13 @@ export default function App() {
                 onRedo={game.redo}
                 canUndo={game.stackSizes.undo > 0}
                 canRedo={game.stackSizes.redo > 0}
+                onMark={(color) => game.markCells(selected, color)}
+                digitHl={game.digitHl}
+                onToggleDigitHl={game.toggleDigitHl}
+                notesView={game.notesView}
+                onToggleNotesView={() =>
+                  game.setNotesView((v) => (v === "grid" ? "badges" : "grid"))
+                }
               />
               <p className="text-center text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                 Arrows/WASD move · 1–9 place · Space notes ·

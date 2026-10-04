@@ -249,6 +249,7 @@ fn build_rule_data(kind: RuleKind, rng: &mut impl Rng, solution: &[u8; CELLS]) -
         RuleKind::Killer => RuleData::Killer { cages: generate_cages(rng, solution) },
         RuleKind::Thermo => RuleData::Thermo { paths: generate_thermos(rng, solution) },
         RuleKind::NonConsecutive => RuleData::NonConsecutive,
+        RuleKind::AntiKnight => RuleData::AntiKnight,
     }
 }
 
@@ -525,12 +526,13 @@ mod tests {
             Difficulty::Hard
         };
         let mut rng = thread_rng();
-        let cases: [&[RuleKind]; 6] = [
+        let cases: [&[RuleKind]; 7] = [
             &[],
             &[RuleKind::Diagonal],
             &[RuleKind::Killer],
             &[RuleKind::Thermo],
             &[RuleKind::NonConsecutive],
+            &[RuleKind::AntiKnight],
             &[RuleKind::Diagonal, RuleKind::Killer],
         ];
         for kinds in cases {

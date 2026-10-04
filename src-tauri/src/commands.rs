@@ -90,6 +90,7 @@ fn save_game(
     store: State<'_, GameStore>,
     cells: Vec<u8>,
     notes: Vec<Vec<u8>>,
+    marks: Vec<u8>,
     elapsed_secs: u64,
 ) -> Result<(), String> {
     let guard = store.0.lock().map_err(|_| "game store poisoned")?;
@@ -106,10 +107,41 @@ fn save_game(
         grade: active.grade,
         cells: cells.to_vec(),
         notes,
+        marks,
         elapsed_secs,
         saved_at: now_unix(),
     };
     storage::save_game_in(&storage::data_dir(), &save)
+}
+
+/// The doc's assist rule: once a *correct* move is placed, every wrong entry
+/// anywhere on the board is removed. A wrong move changes nothing (the red
+/// conflicts tell the story instead).
+#[tauri::command]
+fn clean_entries(
+    store: State<'_, GameStore>,
+    cells: Vec<u8>,
+    targets: Vec<usize>,
+) -> Result<Vec<u8>, String> {
+    let guard = store.0.lock().map_err(|_| "game store poisoned")?;
+    let active = guard.as_ref().ok_or("no active game")?;
+    if cells.len() != polyku_engine::grid::CELLS {
+        return Err("need 81 cells".into());
+    }
+    let placed_correctly = targets.iter().all(|&i| {
+        i < polyku_engine::grid::CELLS
+            && (active.givens[i] != 0 || cells[i] == active.solution[i])
+    });
+    if !placed_correctly {
+        return Ok(cells);
+    }
+    let mut out = cells;
+    for i in 0..polyku_engine::grid::CELLS {
+        if active.givens[i] == 0 && out[i] != 0 && out[i] != active.solution[i] {
+            out[i] = 0;
+        }
+    }
+    Ok(out)
 }
 
 /// Restores a saved game (if any) after a restart.
@@ -178,6 +210,7 @@ pub fn register(builder: tauri::Builder<tauri::Wry>) -> tauri::Builder<tauri::Wr
             validate_board,
             get_hint,
             fill_candidates,
+            clean_entries,
             save_game,
             load_game,
             record_result,
