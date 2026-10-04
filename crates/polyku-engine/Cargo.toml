@@ -1,0 +1,11 @@
+[package]
+name = "polyku-engine"
+version = "0.1.0"
+description = "Polyku's sudoku engine: grid, solver, generator, and variant rules"
+authors = ["wwwerror"]
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
