@@ -10,6 +10,8 @@ interface BoardProps {
   selected: number[];
   conflicts: number[];
   heldDigit: number | null;
+  hintCells: number[];
+  hintElims: Set<string>; // "cell:digit" — candidates the hint removes
   onCellDown: (index: number, additive: boolean) => void;
   onCellEnter: (index: number) => void;
 }
@@ -24,6 +26,7 @@ function Overlays({ rules }: { rules: RuleData[] }) {
       {overlays.map((o, oi) => {
         if ("DiagonalStripe" in o) {
           const { main } = o.DiagonalStripe;
+          // Thin line, same visual weight as the 3×3 box borders.
           return (
             <line
               key={oi}
@@ -32,8 +35,8 @@ function Overlays({ rules }: { rules: RuleData[] }) {
               x2={main ? BOARD : 0}
               y2={BOARD}
               stroke="currentColor"
-              strokeWidth={110}
-              className="text-zinc-400 opacity-[0.07] dark:text-zinc-200 dark:opacity-[0.05]"
+              strokeWidth={4}
+              className="text-zinc-500 dark:text-zinc-400"
             />
           );
         }
@@ -95,11 +98,13 @@ function Overlays({ rules }: { rules: RuleData[] }) {
 }
 
 export function Board({
-  puzzle, cells, notes, selected, conflicts, heldDigit, onCellDown, onCellEnter,
+  puzzle, cells, notes, selected, conflicts, heldDigit, hintCells, hintElims,
+  onCellDown, onCellEnter,
 }: BoardProps) {
   const selSet = new Set(selected);
   const primary = selected[selected.length - 1];
   const primaryDigit = primary !== undefined ? cells[primary] : 0;
+  const hintSet = new Set(hintCells);
 
   return (
     <div className="relative aspect-square w-full max-w-[min(88vh,760px)] select-none rounded-xl bg-zinc-100 p-1 shadow-2xl ring-1 ring-zinc-300 dark:bg-zinc-800 dark:ring-zinc-700">
@@ -124,15 +129,14 @@ export function Board({
             const thickRight = col % 3 === 2 && col !== 8;
             const thickBottom = row % 3 === 2 && row !== 8;
 
-            const bg = isSelected
-              ? "bg-emerald-200 dark:bg-emerald-700/50"
-              : isConflict
-                ? "bg-red-200 dark:bg-red-900/60"
-                : sameDigit
-                  ? "bg-teal-100 dark:bg-teal-800/40"
-                  : isPeer
-                    ? "bg-zinc-200 dark:bg-zinc-700/70"
-                    : "bg-white dark:bg-zinc-800";
+            const isHintCell = hintSet.has(i);
+            const bg = isConflict
+              ? "bg-red-200 dark:bg-red-900/60"
+              : sameDigit
+                ? "bg-teal-100/70 dark:bg-teal-800/30"
+                : isPeer
+                  ? "bg-zinc-100 dark:bg-zinc-700/50"
+                  : "bg-white dark:bg-zinc-800";
 
             const text = isConflict
               ? "text-red-600 dark:text-red-300"
@@ -146,24 +150,42 @@ export function Board({
                 onMouseDown={(e) => onCellDown(i, e.shiftKey || e.ctrlKey || e.metaKey)}
                 onMouseEnter={() => onCellEnter(i)}
                 className={[
-                  "flex items-center justify-center border-[0.5px] border-zinc-300 transition-colors dark:border-zinc-600/70",
+                  "relative flex items-center justify-center border-[0.5px] border-zinc-300 transition-colors dark:border-zinc-600/70",
                   thickRight && "border-r-[3px] border-r-zinc-500 dark:border-r-zinc-400",
                   thickBottom && "border-b-[3px] border-b-zinc-500 dark:border-b-zinc-400",
                   bg,
+                  isSelected &&
+                    "z-10 ring-[3px] ring-inset ring-emerald-600 dark:ring-emerald-400",
+                  isHintCell &&
+                    !isSelected &&
+                    "z-10 ring-[3px] ring-inset ring-amber-500/80 dark:ring-amber-400/80",
                   heldDigit !== null && !isGiven ? "cursor-crosshair" : "cursor-pointer",
                 ].join(" ")}
               >
                 {value !== 0 ? (
-                  <span className={`text-3xl font-semibold leading-none ${text} ${isGiven ? "" : ""}`}>
+                  <span className={`text-3xl font-semibold leading-none ${text}`}>
                     {value}
                   </span>
                 ) : notes[i].length > 0 ? (
-                  <span className="grid h-full w-full grid-cols-3 grid-rows-3 p-[6%] text-[clamp(6px,1.4vw,14px)] leading-none text-zinc-400 dark:text-zinc-500">
-                    {Array.from({ length: 9 }, (_, k) => (
-                      <span key={k} className="flex items-center justify-center">
-                        {notes[i].includes(k + 1) ? k + 1 : ""}
-                      </span>
-                    ))}
+                  <span className="grid h-full w-full grid-cols-3 grid-rows-3 place-items-center text-[clamp(11px,2.3vw,24px)] font-medium leading-none text-zinc-500 dark:text-zinc-300">
+                    {Array.from({ length: 9 }, (_, k) => {
+                      const d = k + 1;
+                      const noted = notes[i].includes(d);
+                      const eliminated = hintElims.has(`${i}:${d}`);
+                      return (
+                        <span
+                          key={k}
+                          className={[
+                            "flex items-center justify-center",
+                            noted && eliminated
+                              ? "text-red-500 line-through dark:text-red-400"
+                              : "",
+                          ].join(" ")}
+                        >
+                          {noted ? d : ""}
+                        </span>
+                      );
+                    })}
                   </span>
                 ) : null}
               </button>

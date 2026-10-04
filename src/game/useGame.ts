@@ -281,6 +281,19 @@ export function useGame() {
     })();
   }, [loadPuzzle]);
 
+  /// Clears all player entries and notes, keeping the same puzzle. The
+  /// escape hatch when the board gets into a hopeless state.
+  const restart = useCallback(() => {
+    const p = puzzleRef.current;
+    if (!p) return;
+    pushUndo(cellsRef.current, notesRef.current);
+    setCells([...p.givens]);
+    setNotes(EMPTY_NOTES());
+    setSelected([]);
+    setHint(null);
+    setSolved(false);
+  }, [pushUndo]);
+
   // --- hints --------------------------------------------------------------
 
   const fetchHint = useCallback(async () => {
@@ -320,7 +333,7 @@ export function useGame() {
     setSelected,
     // actions
     applyDigit, erase, undo, redo, setPencil, setHeldDigit,
-    newGame, fetchHint, applyHint, dismissHint, writeNotes,
+    newGame, fetchHint, applyHint, dismissHint, writeNotes, restart,
   };
 }
 

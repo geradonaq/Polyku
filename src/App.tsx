@@ -157,6 +157,7 @@ export default function App() {
           onHint={game.fetchHint}
           onFillCandidates={() => setShowFill(true)}
           onStats={() => setShowStats(true)}
+          onRestart={game.restart}
           disabled={!puzzle || game.solved}
         />
 
@@ -169,6 +170,12 @@ export default function App() {
               selected={selected}
               conflicts={game.conflicts}
               heldDigit={game.heldDigit}
+              hintCells={game.hint?.highlight_cells ?? []}
+              hintElims={
+                new Set(
+                  (game.hint?.eliminations ?? []).map(([i, d]) => `${i}:${d}`),
+                )
+              }
               onCellDown={onCellDown}
               onCellEnter={onCellEnter}
             />

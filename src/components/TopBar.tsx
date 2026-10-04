@@ -13,6 +13,7 @@ interface TopBarProps {
   onHint: () => void;
   onFillCandidates: () => void;
   onStats: () => void;
+  onRestart: () => void;
   disabled: boolean;
 }
 
@@ -27,7 +28,7 @@ const btn =
 
 export function TopBar({
   difficulty, grade, elapsed, variantNames, theme, onToggleTheme,
-  onNewGame, onHint, onFillCandidates, onStats, disabled,
+  onNewGame, onHint, onFillCandidates, onStats, onRestart, disabled,
 }: TopBarProps) {
   return (
     <header className="flex flex-wrap items-center gap-3 border-b border-zinc-200 px-5 py-3 dark:border-zinc-700">
@@ -58,6 +59,9 @@ export function TopBar({
 
       <div className="flex items-center gap-2">
         <button onClick={onNewGame} className={btn}>New game</button>
+        <button onClick={onRestart} disabled={disabled} title="Clear your entries, keep this puzzle" className={btn}>
+          ↺ Restart
+        </button>
         <button onClick={onHint} disabled={disabled} className={btn}>💡 Hint</button>
         <button onClick={onFillCandidates} disabled={disabled} className={btn}>Candidates</button>
         <button onClick={onStats} className={btn}>Stats</button>
