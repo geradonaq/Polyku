@@ -25,11 +25,15 @@ export default function App() {
 
   // First launch with no save → open the dialog.
   useEffect(() => {
+    if (puzzle) {
+      setShowNewGame(false);
+      return;
+    }
     const id = setTimeout(() => {
-      if (!puzzle) setShowNewGame(true);
+      setShowNewGame(true);
     }, 400);
     return () => clearTimeout(id);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [puzzle]);
 
   useEffect(() => {
     localStorage.setItem("polyku-theme", theme);

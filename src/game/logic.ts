@@ -103,10 +103,15 @@ export function markLogic(
   if (free.length === 0) return null;
   const allSame = free.every((i) => marks[i] === color);
   const next = [...marks];
+  let changed = false;
   for (const i of free) {
-    next[i] = allSame ? 0 : color;
+    const value = allSame ? 0 : color;
+    if (next[i] !== value) {
+      next[i] = value;
+      changed = true;
+    }
   }
-  return next;
+  return changed ? next : null;
 }
 
 /// Classic-rules candidates for one cell (row/col/box deduction only) —
