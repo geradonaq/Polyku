@@ -53,7 +53,7 @@ Prerequisites: [Rust](https://rustup.rs) (stable, MSVC), Node.js 22 LTS.
 ```sh
 npm install
 npm run tauri dev     # play it
-npm test              # frontend unit tests
+npx vitest run        # frontend unit tests
 cargo test --release  # engine tests incl. uniqueness sweeps
 npm run tauri build   # release build
 ```

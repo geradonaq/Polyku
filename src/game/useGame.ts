@@ -144,7 +144,9 @@ export function useGame() {
         try {
           const cleaned = await api.cleanEntries(result.cells, targets);
           if (cleaned.some((d, i) => d !== result.cells[i])) {
-            setCells(cleaned);
+            setCells((current) =>
+              current.every((d, i) => d === result.cells[i]) ? cleaned : current,
+            );
           }
         } catch {
           // host unavailable — the placement itself already applied

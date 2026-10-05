@@ -54,9 +54,11 @@ pub fn compute_conflicts(cells: &[u8; CELLS], rules: &[RuleData]) -> Vec<usize> 
                 for cage in cages {
                     let mut seen: Vec<usize> = Vec::new();
                     let mut sum = 0u16;
+                    let mut filled = 0usize;
                     for c in &cage.cells {
                         let idx = c.index();
                         if cells[idx] != 0 {
+                            filled += 1;
                             if let Some(&first) = seen.iter().find(|&&s| cells[s] == cells[idx]) {
                                 bad.insert(first);
                                 bad.insert(idx);
@@ -65,9 +67,12 @@ pub fn compute_conflicts(cells: &[u8; CELLS], rules: &[RuleData]) -> Vec<usize> 
                             sum += cells[idx] as u16;
                         }
                     }
-                    // Assigned cells already exceed the cage target.
-                    if sum > cage.sum && !seen.is_empty() {
-                        for idx in seen {
+                    // Assigned cells exceed the target, or a complete cage has
+                    // the wrong total.
+                    if (sum > cage.sum || (filled == cage.cells.len() && sum != cage.sum))
+                        && !seen.is_empty()
+                    {
+                        for &idx in &seen {
                             bad.insert(idx);
                         }
                     }
@@ -272,6 +277,24 @@ mod tests {
         let bad = compute_conflicts(&cells, &[]);
         assert!(bad.contains(&0) && bad.contains(&4));
         assert_eq!(bad.len(), 2);
+    }
+
+    #[test]
+    fn complete_killer_cage_with_wrong_sum_is_flagged() {
+        let mut cells = [0u8; CELLS];
+        cells[0] = 1;
+        cells[1] = 2;
+        let rules = vec![RuleData::Killer {
+            cages: vec![polyku_engine::rules::Cage {
+                cells: vec![
+                    polyku_engine::grid::Coord::new(0, 0),
+                    polyku_engine::grid::Coord::new(0, 1),
+                ],
+                sum: 10,
+            }],
+        }];
+        let bad = compute_conflicts(&cells, &rules);
+        assert!(bad.contains(&0) && bad.contains(&1));
     }
 
     #[test]
