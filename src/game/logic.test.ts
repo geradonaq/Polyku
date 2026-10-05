@@ -103,6 +103,12 @@ describe("markLogic", () => {
     expect(unified[10]).toBe(3);
     expect(unified[11]).toBe(3);
   });
+
+  it("is a no-op when clearing already unmarked cells", () => {
+    const marks = Array(81).fill(0);
+    const result = markLogic(marks, [10, 11], 0, GIVENS);
+    expect(result).toBeNull();
+  });
 });
 
 describe("classicCandidates", () => {
